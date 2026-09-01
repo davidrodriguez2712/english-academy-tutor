@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { errorFrom } from '@/lib/http'
 
 export function StartSessionForm({ units }: { units: { id: string; title: string }[] }) {
   const router = useRouter()
@@ -26,7 +27,7 @@ export function StartSessionForm({ units }: { units: { id: string; title: string
       }),
     })
     setBusy(false)
-    if (!res.ok) return setError((await res.json()).error ?? 'Error')
+    if (!res.ok) return setError(await errorFrom(res))
     router.push(`/speaking/${(await res.json()).id}`)
   }
 

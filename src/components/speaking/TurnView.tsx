@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
+import { errorFrom } from '@/lib/http'
 import { AudioRecorder } from './AudioRecorder'
 import { TurnFeedback } from './TurnFeedback'
 import { TurnTabs } from './TurnTabs'
@@ -36,7 +37,7 @@ export function TurnView({
     fd.append('audio', blob, 'turn.webm')
     const res = await fetch(`/api/speaking/sessions/${sessionId}/turns`, { method: 'POST', body: fd })
     if (!res.ok) {
-      setError((await res.json()).error ?? 'Error')
+      setError(await errorFrom(res))
       setPhase('error')
       return
     }

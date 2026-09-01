@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { errorFrom } from '@/lib/http'
 
 export function AddUnitForm({ bookId }: { bookId: string }) {
   const router = useRouter()
@@ -25,7 +26,7 @@ export function AddUnitForm({ bookId }: { bookId: string }) {
       }),
     })
     setBusy(false)
-    if (!res.ok) return setError((await res.json()).error ?? 'Error')
+    if (!res.ok) return setError(await errorFrom(res))
     ;(e.target as HTMLFormElement).reset()
     router.refresh()
   }

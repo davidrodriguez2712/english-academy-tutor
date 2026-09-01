@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { errorFrom } from '@/lib/http'
 
 export function UploadBookForm() {
   const router = useRouter()
@@ -16,7 +17,7 @@ export function UploadBookForm() {
     const res = await fetch('/api/books', { method: 'POST', body: data })
     setBusy(false)
     if (!res.ok) {
-      setError((await res.json()).error ?? 'Error al subir')
+      setError(await errorFrom(res))
       return
     }
     router.refresh()

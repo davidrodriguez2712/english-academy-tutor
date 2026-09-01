@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'La sesión ya terminó' }, { status: 400 })
   }
 
-  const open = session.turns.find((t) => !t.userTranscript)
+  const open = session.turns.find((t) => t.userTranscript === null)
   if (!open) return NextResponse.json({ error: 'No hay turno abierto' }, { status: 400 })
 
   const form = await req.formData()
@@ -41,6 +41,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     userAudioPath = await saveAudioFile(bytes, 'webm')
     transcript = await transcribe(bytes)
+    if (transcript.trim() === '') {
+      return NextResponse.json(
+        { error: 'No he detectado voz en la grabación. Vuelve a grabar.' },
+        { status: 400 },
+      )
+    }
     review = await reviewSpeakingTurn({
       transcript,
       topic: session.topic,
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     throw err
   }
 
-  const savedCount = session.turns.filter((t) => t.userTranscript).length + 1
+  const savedCount = session.turns.filter((t) => t.userTranscript !== null).length + 1
   const complete = isSessionComplete(session, savedCount)
 
   const updatedTurn = await prisma.$transaction(async (tx) => {
@@ -88,7 +94,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await tx.speakingSession.update({
       where: { id: session.id },
       data: {
-        xpEarned: session.xpEarned + XP_PER_SPEAKING_TURN,
+        xpEarned: { increment: XP_PER_SPEAKING_TURN },
         status: complete ? 'COMPLETED' : 'IN_PROGRESS',
       },
     })
