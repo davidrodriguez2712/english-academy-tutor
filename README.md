@@ -27,7 +27,10 @@ lo lee Next.js.
 ## Comandos
 
 - `npm run dev` — servidor de desarrollo
-- `npm test` — tests (Vitest)
+- `npm test` — tests (Vitest). Usa una BD desechable (`prisma/test.db`) y un
+  directorio de almacenamiento aparte (`storage-test/`), recreados en cada
+  ejecución; nunca toca `prisma/dev.db` ni `storage/`, así que es seguro
+  lanzarlo en cualquier momento.
 - `npm run lint` — ESLint
 - `npm run build` — build de producción
 - `npm run db:migrate` — aplicar migraciones (`prisma migrate dev`)

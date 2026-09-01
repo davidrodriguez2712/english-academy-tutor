@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
-export const STORAGE_ROOT = join(process.cwd(), 'storage')
+export const STORAGE_ROOT = resolve(process.env.STORAGE_ROOT ?? join(process.cwd(), 'storage'))
 export const BOOKS_DIR = join(STORAGE_ROOT, 'books')
 export const AUDIO_DIR = join(STORAGE_ROOT, 'audio')
 
@@ -26,7 +26,7 @@ export async function saveAudioFile(bytes: Buffer, ext: 'webm' | 'mp3'): Promise
   const id = randomUUID()
   const sub = id.slice(0, 2)
   await ensure(join(AUDIO_DIR, sub))
-  const rel = join(sub, `${id}.${ext}`)
+  const rel = `${sub}/${id}.${ext}`
   await writeFile(join(AUDIO_DIR, rel), bytes)
   return rel
 }

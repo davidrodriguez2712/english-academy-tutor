@@ -50,3 +50,8 @@ next-env.d.ts
 /prisma/dev.db-journal
 /storage/
 .env.local
+
+# test throwaway data
+/prisma/test.db
+/prisma/test.db-journal
+/storage-test/
