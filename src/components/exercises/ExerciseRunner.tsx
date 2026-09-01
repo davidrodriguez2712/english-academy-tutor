@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { errorFrom } from '@/lib/http'
 import { Tabs } from '@/components/ui/Tabs'
 import { Card } from '@/components/ui/Card'
 import { Spinner } from '@/components/ui/Spinner'
@@ -34,17 +35,23 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
     | { status: 'idle' | 'loading' | 'error'; message?: string }
     | { status: 'ready'; setId: string; content: ExerciseContent }
   >({ status: 'idle' })
-  const [result, setResult] = useState<{ score: number; xpEarned: number } | null>(null)
+  const [result, setResult] = useState<{ score: number; xpEarned: number; totalCount: number } | null>(null)
+  const [finishError, setFinishError] = useState<string | null>(null)
+  const lastSubmit = useRef<
+    { setId: string; r: { correctCount: number; totalCount: number; answers: unknown } } | null
+  >(null)
 
   async function load(type: ExerciseType, regenerate = false) {
     setActive(type)
     setResult(null)
+    setFinishError(null)
+    lastSubmit.current = null
     setState({ status: 'loading' })
     const res = await fetch(`/api/units/${unitId}/exercises?type=${type}${regenerate ? '&regenerate=1' : ''}`, {
       method: 'POST',
     })
     if (!res.ok) {
-      setState({ status: 'error', message: (await res.json()).error ?? 'Error' })
+      setState({ status: 'error', message: await errorFrom(res) })
       return
     }
     const data = await res.json()
@@ -52,15 +59,20 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
   }
 
   async function finish(setId: string, r: { correctCount: number; totalCount: number; answers: unknown }) {
+    lastSubmit.current = { setId, r }
+    setFinishError(null)
     const res = await fetch('/api/attempts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ exerciseSetId: setId, ...r }),
     })
-    if (res.ok) {
-      setResult(await res.json())
-      router.refresh() // actualiza la cabecera de XP/racha
+    if (!res.ok) {
+      setFinishError(await errorFrom(res))
+      return
     }
+    const data = await res.json()
+    setResult({ ...data, totalCount: r.totalCount })
+    router.refresh() // actualiza la cabecera de XP/racha
   }
 
   return (
@@ -81,35 +93,55 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
         )}
         {state.status === 'ready' && (
           <div className="space-y-4">
-            {result ? (
-              <div className="space-y-2">
-                <p className="font-medium">Puntuación: {result.score}% · +{result.xpEarned} XP</p>
+            {result && (
+              <div className="space-y-2 rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
+                <p className="font-medium">
+                  {result.totalCount === 0
+                    ? `Sesión completada · +${result.xpEarned} XP`
+                    : `Puntuación: ${result.score}% · +${result.xpEarned} XP`}
+                </p>
                 <div className="flex gap-2">
                   <Button variant="ghost" onClick={() => load(active, true)}>Regenerar</Button>
                   <Button onClick={() => load(active)}>Repetir</Button>
                 </div>
               </div>
-            ) : (
-              <>
-                {active === 'MULTIPLE_CHOICE' && (
-                  <MultipleChoice content={state.content as MultipleChoiceContent} onFinish={(r) => finish(state.setId, r)} />
-                )}
-                {active === 'FILL_BLANKS' && (
-                  <FillBlanks content={state.content as FillBlanksContent} onFinish={(r) => finish(state.setId, r)} />
-                )}
-                {active === 'MATCHING' && (
-                  <Matching content={state.content as MatchingContent} onFinish={(r) => finish(state.setId, r)} />
-                )}
-                {active === 'ORDER_WORDS' && (
-                  <OrderWords content={state.content as OrderWordsContent} onFinish={(r) => finish(state.setId, r)} />
-                )}
-                {active === 'FLASHCARDS' && (
-                  <Flashcards content={state.content as FlashcardsContent} onFinish={(r) => finish(state.setId, r)} />
-                )}
-                <button className="text-xs" style={{ color: 'var(--muted)' }} onClick={() => load(active, true)}>
-                  Regenerar este ejercicio
-                </button>
-              </>
+            )}
+
+            {active === 'MULTIPLE_CHOICE' && (
+              <MultipleChoice content={state.content as MultipleChoiceContent} onFinish={(r) => finish(state.setId, r)} />
+            )}
+            {active === 'FILL_BLANKS' && (
+              <FillBlanks content={state.content as FillBlanksContent} onFinish={(r) => finish(state.setId, r)} />
+            )}
+            {active === 'MATCHING' && (
+              <Matching content={state.content as MatchingContent} onFinish={(r) => finish(state.setId, r)} />
+            )}
+            {active === 'ORDER_WORDS' && (
+              <OrderWords content={state.content as OrderWordsContent} onFinish={(r) => finish(state.setId, r)} />
+            )}
+            {active === 'FLASHCARDS' && (
+              <Flashcards content={state.content as FlashcardsContent} onFinish={(r) => finish(state.setId, r)} />
+            )}
+
+            {finishError && (
+              <div className="space-y-2">
+                <p style={{ color: 'var(--warning)' }}>
+                  No se pudo guardar el intento: {finishError}
+                </p>
+                <Button
+                  onClick={() =>
+                    lastSubmit.current && finish(lastSubmit.current.setId, lastSubmit.current.r)
+                  }
+                >
+                  Reintentar guardado
+                </Button>
+              </div>
+            )}
+
+            {!result && (
+              <button className="text-xs" style={{ color: 'var(--muted)' }} onClick={() => load(active, true)}>
+                Regenerar este ejercicio
+              </button>
             )}
           </div>
         )}

@@ -17,6 +17,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const unit = await prisma.unit.findUnique({ where: { id } })
   if (!unit) return NextResponse.json({ error: 'Unidad no encontrada' }, { status: 404 })
 
+  // "Continuar" en el home ordena por lastOpenedAt: hay que actualizarlo tanto
+  // si se sirve la caché como si se genera.
+  await prisma.unit.update({ where: { id }, data: { lastOpenedAt: new Date() } })
+
   const existing = await prisma.exerciseSet.findUnique({
     where: { unitId_type: { unitId: id, type } },
   })
@@ -54,7 +58,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     create: { unitId: id, type, content: serialized },
     update: { content: serialized, generatedAt: new Date() },
   })
-  await prisma.unit.update({ where: { id }, data: { lastOpenedAt: new Date() } })
-
   return NextResponse.json({ id: set.id, type, content: deserializeContent(type, serialized) })
 }

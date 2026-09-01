@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
   const set = await prisma.exerciseSet.findUnique({ where: { id: exerciseSetId } })
   if (!set) return NextResponse.json({ error: 'Set no encontrado' }, { status: 404 })
 
-  const cc = Math.max(0, Number(correctCount) || 0)
   const tc = Math.max(0, Number(totalCount) || 0)
+  const cc = Math.min(Math.max(0, Number(correctCount) || 0), tc)
   const score = tc === 0 ? 0 : Math.round((cc / tc) * 100)
   const xpEarned = xpForExercise(set.type, cc)
 

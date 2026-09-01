@@ -52,7 +52,7 @@ export function gradeOrderWords(
 }
 
 export function gradeMatching(
-  userPairs: Record<number, number>,
+  userPairs: Record<number, number | undefined>,
   pairCount: number,
 ): GradeResult {
   let correct = 0

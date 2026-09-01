@@ -11,7 +11,7 @@ export function Matching({ content, onFinish }: {
 }) {
   // rightOrder[k] = índice original del par mostrado en la posición k del desplegable
   const rightOrder = useMemo(() => shuffle(content.items.map((_, i) => i), 1234), [content])
-  const [picks, setPicks] = useState<Record<number, number>>({})
+  const [picks, setPicks] = useState<Record<number, number | undefined>>({})
   const [done, setDone] = useState(false)
 
   function submit() {
@@ -28,7 +28,12 @@ export function Matching({ content, onFinish }: {
           <select
             disabled={done}
             value={picks[i] ?? ''}
-            onChange={(e) => setPicks((p) => ({ ...p, [i]: Number(e.target.value) }))}
+            onChange={(e) =>
+              setPicks((p) => ({
+                ...p,
+                [i]: e.target.value === '' ? undefined : Number(e.target.value),
+              }))
+            }
             className="rounded border px-2 py-1"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
           >
