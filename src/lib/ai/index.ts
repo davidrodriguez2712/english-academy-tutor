@@ -1,0 +1,6 @@
+export { transcribe } from './transcribe'
+export { generateExercises } from './exercises'
+export { generateGuidedOpener, reviewSpeakingTurn } from './speaking'
+export { synthesizeSpeech } from './tts'
+export { isAiEnabled, MODELS } from './config'
+export { AiError } from './retry'
