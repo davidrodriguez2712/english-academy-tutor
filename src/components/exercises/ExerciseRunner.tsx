@@ -40,12 +40,16 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
   const lastSubmit = useRef<
     { setId: string; r: { correctCount: number; totalCount: number; answers: unknown } } | null
   >(null)
+  // true en cuanto un intento se guarda con éxito: evita dobles POST desde
+  // componentes que quedan montados sin estado `done` (p.ej. Flashcards).
+  const submittedRef = useRef(false)
 
   async function load(type: ExerciseType, regenerate = false) {
     setActive(type)
     setResult(null)
     setFinishError(null)
     lastSubmit.current = null
+    submittedRef.current = false
     setState({ status: 'loading' })
     const res = await fetch(`/api/units/${unitId}/exercises?type=${type}${regenerate ? '&regenerate=1' : ''}`, {
       method: 'POST',
@@ -59,6 +63,7 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
   }
 
   async function finish(setId: string, r: { correctCount: number; totalCount: number; answers: unknown }) {
+    if (submittedRef.current) return // ya se guardó este set; ignora clics extra
     lastSubmit.current = { setId, r }
     setFinishError(null)
     const res = await fetch('/api/attempts', {
@@ -71,6 +76,7 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
       return
     }
     const data = await res.json()
+    submittedRef.current = true
     setResult({ ...data, totalCount: r.totalCount })
     router.refresh() // actualiza la cabecera de XP/racha
   }
