@@ -20,7 +20,7 @@ export function Sidebar() {
     >
       <nav className="flex flex-col gap-1">
         <div className="mb-4 text-lg font-bold" style={{ color: 'var(--primary)' }}>
-          English Tutor
+          English Academy Tutor
         </div>
         {LINKS.map((l) => {
           const active = l.href === '/' ? path === '/' : path.startsWith(l.href)

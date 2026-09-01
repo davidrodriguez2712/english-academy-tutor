@@ -18,6 +18,8 @@
   --text: #ececf5;
   --muted: #9a9ab5;
   --primary: #8b7dff;
+  --success: #34d399;
+  --warning: #fbbf24;
 }
 body {
   background: var(--bg);

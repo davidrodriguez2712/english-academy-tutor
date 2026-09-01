@@ -4,9 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del repositorio
 
-Proyecto en fase inicial (greenfield). Todavía **no hay código, ni `package.json`, ni commits**. Lo único presente es la configuración de un flujo de trabajo spec-driven en `.claude/skills/`.
+Esqueleto funcional de la app (spec `01-esqueleto`).
 
-Cuando se añada código real (stack, comandos de build/test/lint, arquitectura), **actualiza este archivo**: esta sección debe reemplazarse por las instrucciones de desarrollo concretas.
+**Stack:** Next.js 16 (App Router) + TypeScript · Prisma 6 + SQLite · OpenAI SDK · Vitest.
+
+**Comandos:**
+
+- `npm run dev` — servidor de desarrollo
+- `npm test` — tests (Vitest; BD y almacenamiento desechables, no toca los datos reales)
+- `npm run lint` — ESLint
+- `npm run build` — build de producción
+- `npm run db:migrate` — `prisma migrate dev`
+- `npm run db:studio` — Prisma Studio
+
+**Arquitectura:**
+
+- Todo el acceso a la IA vive tras `src/lib/ai/*`; sin `OPENAI_API_KEY` la app arranca y navega, con las funciones de IA desactivadas (`isAiEnabled()` + `AiDisabledBanner`).
+- La lógica pura (gamificación, corrección de ejercicios, normalización, turnos de speaking) está en `src/lib/` y se testea aislada.
+- App `force-dynamic` de principio a fin; usuario único, sin login, modelado por una fila `Profile`.
 
 ## Flujo spec-driven
 

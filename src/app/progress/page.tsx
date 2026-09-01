@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/db'
 import { getProfile } from '@/lib/profile'
 import { levelFromXp } from '@/lib/gamification/level'
+import { EXERCISE_TABS } from '@/lib/exercise-types'
 import { Card } from '@/components/ui/Card'
+
+const EXERCISE_LABELS = Object.fromEntries(EXERCISE_TABS.map((t) => [t.type, t.label]))
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +29,7 @@ export default async function ProgressPage() {
   const rows = [
     ...attempts.map((a) => ({
       date: a.completedAt,
-      label: `Ejercicio · ${a.exerciseSet.unit.title} · ${a.exerciseSet.type} · ${a.score}%`,
+      label: `Ejercicio · ${a.exerciseSet.unit.title} · ${EXERCISE_LABELS[a.exerciseSet.type] ?? a.exerciseSet.type} · ${a.score}%`,
       xp: a.xpEarned,
     })),
     ...sessions.map((s) => ({
