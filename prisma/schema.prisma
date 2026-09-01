@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ExerciseType {
+  MULTIPLE_CHOICE
+  FILL_BLANKS
+  MATCHING
+  ORDER_WORDS
+  FLASHCARDS
+}
+
+enum SpeakingMode {
+  GUIDED
+  MONOLOGUE
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Profile {
+  id               Int       @id @default(1)
+  xp               Int       @default(0)
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime?
+}
+
+model Book {
+  id        String   @id @default(cuid())
+  title     String
+  filename  String
+  pageCount Int
+  rawText   String
+  createdAt DateTime @default(now())
+  units     Unit[]
+}
+
+model Unit {
+  id            String        @id @default(cuid())
+  bookId        String
+  book          Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  title         String
+  startPage     Int
+  endPage       Int
+  level         String?
+  extractedText String
+  createdAt     DateTime      @default(now())
+  lastOpenedAt  DateTime?
+  exerciseSets  ExerciseSet[]
+  sessions      SpeakingSession[]
+}
+
+model ExerciseSet {
+  id          String           @id @default(cuid())
+  unitId      String
+  unit        Unit             @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  type        ExerciseType
+  content     String
+  generatedAt DateTime         @default(now())
+  attempts    ExerciseAttempt[]
+
+  @@unique([unitId, type])
+}
+
+model ExerciseAttempt {
+  id            String      @id @default(cuid())
+  exerciseSetId String
+  exerciseSet   ExerciseSet @relation(fields: [exerciseSetId], references: [id], onDelete: Cascade)
+  score         Int
+  correctCount  Int
+  totalCount    Int
+  xpEarned      Int
+  answers       String
+  completedAt   DateTime    @default(now())
+}
+
+model SpeakingSession {
+  id         String        @id @default(cuid())
+  mode       SpeakingMode
+  unitId     String?
+  unit       Unit?         @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  topic      String
+  status     SessionStatus @default(IN_PROGRESS)
+  totalTurns Int
+  xpEarned   Int           @default(0)
+  createdAt  DateTime      @default(now())
+  turns      SpeakingTurn[]
+}
+
+model SpeakingTurn {
+  id                  String          @id @default(cuid())
+  sessionId           String
+  session             SpeakingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  index               Int
+  assistantPrompt     String
+  assistantAudioPath  String?
+  userAudioPath       String?
+  userTranscript      String?
+  correctedText       String?
+  naturalVersion      String?
+  fluencyTip          String?
+  correctionAudioPath String?
+  createdAt           DateTime        @default(now())
+
+  @@unique([sessionId, index])
+}
