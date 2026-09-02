@@ -34,6 +34,11 @@ export function FillBlanks({ content, onFinish }: {
               style={{ borderColor: done ? (ok ? 'var(--success)' : 'var(--warning)') : 'var(--border)', background: 'var(--bg)' }}
             />
             {after}
+            {it.page ? (
+              <span className="ml-2 text-xs" style={{ color: 'var(--muted)' }}>
+                (pág. {it.page})
+              </span>
+            ) : null}
             {done && !ok && <span className="ml-2" style={{ color: 'var(--muted)' }}>→ {it.answer}</span>}
           </div>
         )

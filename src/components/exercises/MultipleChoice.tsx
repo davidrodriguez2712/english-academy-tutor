@@ -24,7 +24,14 @@ export function MultipleChoice({
     <div className="space-y-5">
       {content.items.map((q, i) => (
         <div key={i}>
-          <p className="font-medium">{i + 1}. {q.question}</p>
+          <p className="font-medium">
+            {i + 1}. {q.question}
+            {q.page ? (
+              <span className="ml-2 text-xs font-normal" style={{ color: 'var(--muted)' }}>
+                (pág. {q.page})
+              </span>
+            ) : null}
+          </p>
           <div className="mt-2 space-y-1">
             {q.options.map((opt, j) => {
               const chosen = answers[i] === j
