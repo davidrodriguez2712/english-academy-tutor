@@ -66,3 +66,18 @@ export function turnReviewPrompt(input: {
       `Transcripción de lo que dijo el estudiante en este turno:\n"${input.transcript}"`,
   }
 }
+
+export function vocabPrompt(word: string): { system: string; user: string } {
+  return {
+    system:
+      'Eres un diccionario para un estudiante hispanohablante de inglés. ' +
+      'Responde SOLO con JSON válido con esta forma exacta: ' +
+      '{ "translation": string, "meaning": string, "partOfSpeech": string, "ipa": string, "examples": string[] }. ' +
+      'translation: la traducción al español. ' +
+      'meaning: la definición en inglés. ' +
+      'partOfSpeech: la categoría gramatical en inglés (noun, verb, adjective, adverb, phrase, phrasal verb, idiom...). ' +
+      'ipa: la transcripción fonética entre barras, p. ej. /ˈwɜːrd/. ' +
+      'examples: al menos 3 frases de ejemplo en inglés que usen la palabra o expresión.',
+    user: `Palabra o expresión: "${word}"`,
+  }
+}
