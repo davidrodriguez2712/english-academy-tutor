@@ -3,13 +3,15 @@ import { openai } from './client'
 import { MODELS } from './config'
 import { withRetry, AiError } from './retry'
 import { exercisePrompt } from './prompts'
+import type { PageSlice } from '@/lib/pdf'
 import { parseExerciseContent, type ExerciseContent } from '@/lib/validation/exercises'
 
 export async function generateExercises(
   unitText: string,
   type: ExerciseType,
+  opts?: { pages?: PageSlice[] },
 ): Promise<ExerciseContent> {
-  const { system, user } = exercisePrompt(unitText, type)
+  const { system, user } = exercisePrompt(unitText, type, opts?.pages)
   return withRetry(async () => {
     const res = await openai().chat.completions.create({
       model: MODELS.chat,

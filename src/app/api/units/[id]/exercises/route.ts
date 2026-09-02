@@ -4,6 +4,7 @@ import { isAiEnabled } from '@/lib/ai/config'
 import { generateExercises, AiError } from '@/lib/ai'
 import { isExerciseType } from '@/lib/exercise-types'
 import { serializeContent, deserializeContent } from '@/lib/exercises/exercise-set'
+import { sliceUnitPages } from '@/lib/pdf'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Tipo de ejercicio inválido' }, { status: 400 })
   }
 
-  const unit = await prisma.unit.findUnique({ where: { id } })
+  const unit = await prisma.unit.findUnique({ where: { id }, include: { book: true } })
   if (!unit) return NextResponse.json({ error: 'Unidad no encontrada' }, { status: 404 })
 
   // "Continuar" en el home ordena por lastOpenedAt: hay que actualizarlo tanto
@@ -41,7 +42,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   let serialized: string
   try {
-    const content = await generateExercises(unit.extractedText, type)
+    const usePages = type === 'MULTIPLE_CHOICE' || type === 'FILL_BLANKS'
+    const pages = usePages
+      ? sliceUnitPages(JSON.parse(unit.book.rawText) as string[], unit.startPage, unit.endPage)
+      : undefined
+    const content = await generateExercises(unit.extractedText, type, { pages })
     serialized = serializeContent(type, content)
   } catch (err) {
     if (err instanceof AiError) {

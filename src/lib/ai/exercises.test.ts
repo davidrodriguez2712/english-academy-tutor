@@ -6,6 +6,7 @@ vi.mock('./client', () => ({
 }))
 
 import { generateExercises } from './exercises'
+import { exercisePrompt } from './prompts'
 import * as fx from '@/lib/validation/fixtures/exercises'
 
 beforeEach(() => create.mockReset())
@@ -26,5 +27,22 @@ describe('generateExercises', () => {
       label: 'generateExercises',
     })
     expect(create).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('exercisePrompt con páginas', () => {
+  it('incluye marcadores de página para opción múltiple', () => {
+    const { user } = exercisePrompt('', 'MULTIPLE_CHOICE', [{ page: 7, text: 'hello world' }])
+    expect(user).toContain('=== Página 7 ===')
+    expect(user).toContain('"page"')
+  })
+  it('ignora las páginas para matching', () => {
+    const { user } = exercisePrompt('texto plano', 'MATCHING', [{ page: 7, text: 'hello' }])
+    expect(user).not.toContain('=== Página 7 ===')
+  })
+  it('sin páginas usa el texto plano de la unidad', () => {
+    const { user } = exercisePrompt('texto de la unidad', 'MULTIPLE_CHOICE')
+    expect(user).toContain('texto de la unidad')
+    expect(user).not.toContain('=== Página')
   })
 })

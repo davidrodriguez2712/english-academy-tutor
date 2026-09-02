@@ -1,4 +1,5 @@
 import type { ExerciseType } from '@prisma/client'
+import type { PageSlice } from '@/lib/pdf'
 
 const COUNTS: Record<ExerciseType, number> = {
   MULTIPLE_CHOICE: 10,
@@ -10,16 +11,32 @@ const COUNTS: Record<ExerciseType, number> = {
 
 const SHAPE: Record<ExerciseType, string> = {
   MULTIPLE_CHOICE:
-    '{ "items": [{ "question": string, "options": string[4], "correctIndex": number (0-3), "explanation": string }] }',
+    '{ "items": [{ "question": string, "options": string[4], "correctIndex": number (0-3), "explanation": string, "page"?: number }] }',
   FILL_BLANKS:
-    '{ "items": [{ "sentence": string con "___" para el hueco, "answer": string, "acceptedVariants": string[] }] }',
+    '{ "items": [{ "sentence": string con "___" para el hueco, "answer": string, "acceptedVariants": string[], "page"?: number }] }',
   MATCHING: '{ "items": [{ "left": string (término inglés), "right": string (definición o traducción) }] }',
   ORDER_WORDS:
     '{ "items": [{ "scrambled": string[] (palabras desordenadas), "correctOrder": string[] (mismas palabras ordenadas) }] }',
   FLASHCARDS: '{ "items": [{ "front": string (inglés), "back": string (español) }] }',
 }
 
-export function exercisePrompt(unitText: string, type: ExerciseType): { system: string; user: string } {
+const PAGE_AWARE: Partial<Record<ExerciseType, true>> = {
+  MULTIPLE_CHOICE: true,
+  FILL_BLANKS: true,
+}
+
+export function exercisePrompt(
+  unitText: string,
+  type: ExerciseType,
+  pages?: PageSlice[],
+): { system: string; user: string } {
+  const usePages = Boolean(pages && pages.length > 0 && PAGE_AWARE[type])
+  const textBlock = usePages
+    ? pages!.map((p) => `=== Página ${p.page} ===\n${p.text}`).join('\n\n').slice(0, 8000)
+    : unitText.slice(0, 8000)
+  const pageHint = usePages
+    ? 'Si una pregunta se apoya en un pasaje concreto, añade "page" con el número de la página mostrada sobre ese pasaje. Si la pregunta es general, omite "page".\n\n'
+    : ''
   return {
     system:
       'Eres un profesor de inglés que crea ejercicios a partir del texto de una unidad de un libro. ' +
@@ -27,7 +44,8 @@ export function exercisePrompt(unitText: string, type: ExerciseType): { system: 
     user:
       `Crea ${COUNTS[type]} ítems de tipo ${type}.\n` +
       `Forma JSON exacta: ${SHAPE[type]}\n\n` +
-      `Texto de la unidad:\n"""\n${unitText.slice(0, 8000)}\n"""`,
+      pageHint +
+      `Texto de la unidad:\n"""\n${textBlock}\n"""`,
   }
 }
 
