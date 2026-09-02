@@ -4,9 +4,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { errorFrom } from '@/lib/http'
 
-// Debe coincidir con MAX_PDF_MB del servidor (por defecto 50). Solo es un aviso
-// temprano en el cliente; el servidor es el que manda.
-const MAX_MB = 50
+// Aviso temprano en el cliente; el servidor (MAX_PDF_MB, por defecto 100) manda.
+const MAX_MB = Number(process.env.NEXT_PUBLIC_MAX_PDF_MB) || 100
 
 export function UploadBookForm() {
   const router = useRouter()

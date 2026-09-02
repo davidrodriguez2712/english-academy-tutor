@@ -3,10 +3,10 @@ import { prisma } from '@/lib/db'
 import { saveBookFile } from '@/lib/storage'
 import { extractPdf } from '@/lib/pdf'
 
-// Límite configurable por si necesitas subir un PDF grande (por defecto 50 MB).
+// Límite configurable por si necesitas subir un PDF grande (por defecto 100 MB).
 // El archivo se bufferiza entero en memoria para extraer el texto, así que no
 // conviene subirlo mucho más alto.
-const MAX_BYTES = (Number(process.env.MAX_PDF_MB) || 50) * 1024 * 1024
+const MAX_BYTES = (Number(process.env.MAX_PDF_MB) || 100) * 1024 * 1024
 
 export async function POST(req: NextRequest) {
   const form = await req.formData()
