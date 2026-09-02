@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle'
 const LINKS = [
   { href: '/', label: 'Inicio' },
   { href: '/learn', label: 'Aprender' },
+  { href: '/vocab', label: 'Vocabulario' },
   { href: '/speaking', label: 'Practicar speaking' },
   { href: '/library', label: 'Biblioteca' },
   { href: '/progress', label: 'Progreso' },
