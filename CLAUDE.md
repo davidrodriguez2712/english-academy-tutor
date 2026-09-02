@@ -4,9 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del repositorio
 
-Proyecto en fase inicial (greenfield). Todavía **no hay código, ni `package.json`, ni commits**. Lo único presente es la configuración de un flujo de trabajo spec-driven en `.claude/skills/`.
+Esqueleto funcional de la app (spec `01-esqueleto`).
 
-Cuando se añada código real (stack, comandos de build/test/lint, arquitectura), **actualiza este archivo**: esta sección debe reemplazarse por las instrucciones de desarrollo concretas.
+**Stack:** Next.js 16 (App Router) + TypeScript · Prisma 6 + SQLite · OpenAI SDK · Vitest.
+
+**Comandos:**
+
+- `npm run dev` — servidor de desarrollo
+- `npm test` — tests (Vitest; BD y almacenamiento desechables, no toca los datos reales)
+- `npm run lint` — ESLint
+- `npm run build` — build de producción
+- `npm run db:migrate` — `prisma migrate dev`
+- `npm run db:studio` — Prisma Studio
+
+**Arquitectura:**
+
+- Todo el acceso a la IA vive tras `src/lib/ai/*`; sin `OPENAI_API_KEY` la app arranca y navega, con las funciones de IA desactivadas (`isAiEnabled()` + `AiDisabledBanner`).
+- La lógica pura (gamificación, corrección de ejercicios, normalización, turnos de speaking) está en `src/lib/` y se testea aislada.
+- App `force-dynamic` de principio a fin; usuario único, sin login, modelado por una fila `Profile`.
 
 ## Flujo spec-driven
 
@@ -25,3 +40,13 @@ Detalles clave:
 ## Idioma
 
 Todo (specs, respuestas, documentación) en español.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
