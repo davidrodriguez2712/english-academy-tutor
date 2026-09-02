@@ -55,6 +55,7 @@ model Unit {
   createdAt     DateTime      @default(now())
   lastOpenedAt  DateTime?
   exerciseSets  ExerciseSet[]
+  vocab         UnitVocab?
   sessions      SpeakingSession[]
 }
 
@@ -129,4 +130,14 @@ model VocabEntry {
   examples     String              // JSON: string[] (mín. 3), en inglés
   status       WordStatus @default(IN_PROGRESS)
   createdAt    DateTime   @default(now())
+}
+
+// Vocabulario clave de una unidad (páginas seleccionadas), generado por IA.
+// Un registro por unidad; content es JSON { items: UnitVocabWord[] }.
+model UnitVocab {
+  id          String   @id @default(cuid())
+  unitId      String   @unique
+  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  content     String
+  generatedAt DateTime @default(now())
 }

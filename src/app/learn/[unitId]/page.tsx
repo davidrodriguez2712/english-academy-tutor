@@ -7,7 +7,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function UnitLearnPage({ params }: { params: Promise<{ unitId: string }> }) {
   const { unitId } = await params
-  const unit = await prisma.unit.findUnique({ where: { id: unitId }, include: { book: true } })
+  const unit = await prisma.unit.findUnique({
+    where: { id: unitId },
+    include: {
+      book: true,
+      exerciseSets: { select: { type: true } },
+      vocab: { select: { id: true } },
+    },
+  })
   if (!unit) notFound()
   return (
     <div className="space-y-4">
@@ -17,7 +24,11 @@ export default async function UnitLearnPage({ params }: { params: Promise<{ unit
           {unit.book.title} · <Link href={`/speaking?unitId=${unit.id}`} style={{ color: 'var(--primary)' }}>practicar speaking</Link>
         </p>
       </div>
-      <ExerciseRunner unitId={unit.id} />
+      <ExerciseRunner
+        unitId={unit.id}
+        cached={unit.exerciseSets.map((s) => s.type)}
+        hasVocab={unit.vocab !== null}
+      />
     </div>
   )
 }

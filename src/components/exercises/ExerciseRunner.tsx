@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { errorFrom } from '@/lib/http'
 import { Tabs } from '@/components/ui/Tabs'
@@ -20,6 +20,7 @@ import { FillBlanks } from './FillBlanks'
 import { Matching } from './Matching'
 import { OrderWords } from './OrderWords'
 import { Flashcards } from './Flashcards'
+import { UnitVocab } from './UnitVocab'
 
 type ExerciseContent =
   | MultipleChoiceContent
@@ -28,9 +29,24 @@ type ExerciseContent =
   | OrderWordsContent
   | FlashcardsContent
 
-export function ExerciseRunner({ unitId }: { unitId: string }) {
+type Tab = ExerciseType | 'VOCAB'
+
+const ALL_TABS: { id: Tab; label: string }[] = [
+  ...EXERCISE_TABS.map((t) => ({ id: t.type as Tab, label: t.label })),
+  { id: 'VOCAB', label: 'Vocabulario' },
+]
+
+export function ExerciseRunner({
+  unitId,
+  cached = [],
+  hasVocab = false,
+}: {
+  unitId: string
+  cached?: ExerciseType[]
+  hasVocab?: boolean
+}) {
   const router = useRouter()
-  const [active, setActive] = useState<ExerciseType>('MULTIPLE_CHOICE')
+  const [active, setActive] = useState<Tab>('MULTIPLE_CHOICE')
   const [state, setState] = useState<
     | { status: 'idle' | 'loading' | 'error'; message?: string }
     | { status: 'ready'; setId: string; content: ExerciseContent }
@@ -43,6 +59,7 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
   // true en cuanto un intento se guarda con éxito: evita dobles POST desde
   // componentes que quedan montados sin estado `done` (p.ej. Flashcards).
   const submittedRef = useRef(false)
+  const autoloaded = useRef(false)
 
   async function load(type: ExerciseType, regenerate = false) {
     setActive(type)
@@ -61,6 +78,29 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
     const data = await res.json()
     setState({ status: 'ready', setId: data.id, content: data.content })
   }
+
+  function selectTab(tab: Tab) {
+    if (tab === 'VOCAB') {
+      setActive('VOCAB')
+      setResult(null)
+      setFinishError(null)
+      return
+    }
+    load(tab)
+  }
+
+  // Al abrir la unidad: si ya hay contenido generado, abre la primera pestaña
+  // con caché (cache-hit instantáneo, sin llamar a la IA). Si no, deja el inicio.
+  useEffect(() => {
+    if (autoloaded.current) return
+    autoloaded.current = true
+    const firstCached = EXERCISE_TABS.find((t) => cached.includes(t.type))?.type
+    // Carga inicial (cache-hit); es una petición de arranque, no un bucle de estado.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (firstCached) load(firstCached)
+    else if (hasVocab) setActive('VOCAB')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function finish(setId: string, r: { correctCount: number; totalCount: number; answers: unknown }) {
     if (submittedRef.current) return // ya se guardó este set; ignora clics extra
@@ -84,72 +124,80 @@ export function ExerciseRunner({ unitId }: { unitId: string }) {
   return (
     <div className="space-y-4">
       <Tabs
-        tabs={EXERCISE_TABS.map((t) => ({ id: t.type, label: t.label }))}
+        tabs={ALL_TABS.map((t) => ({ id: t.id, label: t.label }))}
         active={active}
-        onChange={(id) => load(id as ExerciseType)}
+        onChange={(id) => selectTab(id as Tab)}
       />
       <Card>
-        {state.status === 'idle' && <p style={{ color: 'var(--muted)' }}>Elige una pestaña para empezar.</p>}
-        {state.status === 'loading' && <Spinner label="Generando ejercicio…" />}
-        {state.status === 'error' && (
-          <div className="space-y-2">
-            <p style={{ color: 'var(--warning)' }}>{state.message}</p>
-            <Button onClick={() => load(active)}>Reintentar</Button>
-          </div>
-        )}
-        {state.status === 'ready' && (
-          <div className="space-y-4">
-            {result && (
-              <div className="space-y-2 rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
-                <p className="font-medium">
-                  {result.totalCount === 0
-                    ? `Sesión completada · +${result.xpEarned} XP`
-                    : `Puntuación: ${result.score}% · +${result.xpEarned} XP`}
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => load(active, true)}>Regenerar</Button>
-                  <Button onClick={() => load(active)}>Repetir</Button>
-                </div>
-              </div>
+        {active === 'VOCAB' ? (
+          <UnitVocab unitId={unitId} />
+        ) : (
+          <>
+            {state.status === 'idle' && (
+              <p style={{ color: 'var(--muted)' }}>Elige una pestaña para empezar.</p>
             )}
-
-            {active === 'MULTIPLE_CHOICE' && (
-              <MultipleChoice content={state.content as MultipleChoiceContent} onFinish={(r) => finish(state.setId, r)} />
-            )}
-            {active === 'FILL_BLANKS' && (
-              <FillBlanks content={state.content as FillBlanksContent} onFinish={(r) => finish(state.setId, r)} />
-            )}
-            {active === 'MATCHING' && (
-              <Matching content={state.content as MatchingContent} onFinish={(r) => finish(state.setId, r)} />
-            )}
-            {active === 'ORDER_WORDS' && (
-              <OrderWords content={state.content as OrderWordsContent} onFinish={(r) => finish(state.setId, r)} />
-            )}
-            {active === 'FLASHCARDS' && (
-              <Flashcards content={state.content as FlashcardsContent} onFinish={(r) => finish(state.setId, r)} />
-            )}
-
-            {finishError && (
+            {state.status === 'loading' && <Spinner label="Generando ejercicio…" />}
+            {state.status === 'error' && (
               <div className="space-y-2">
-                <p style={{ color: 'var(--warning)' }}>
-                  No se pudo guardar el intento: {finishError}
-                </p>
-                <Button
-                  onClick={() =>
-                    lastSubmit.current && finish(lastSubmit.current.setId, lastSubmit.current.r)
-                  }
-                >
-                  Reintentar guardado
-                </Button>
+                <p style={{ color: 'var(--warning)' }}>{state.message}</p>
+                <Button onClick={() => load(active as ExerciseType)}>Reintentar</Button>
               </div>
             )}
+            {state.status === 'ready' && (
+              <div className="space-y-4">
+                {result && (
+                  <div className="space-y-2 rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
+                    <p className="font-medium">
+                      {result.totalCount === 0
+                        ? `Sesión completada · +${result.xpEarned} XP`
+                        : `Puntuación: ${result.score}% · +${result.xpEarned} XP`}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" onClick={() => load(active as ExerciseType, true)}>Regenerar</Button>
+                      <Button onClick={() => load(active as ExerciseType)}>Repetir</Button>
+                    </div>
+                  </div>
+                )}
 
-            {!result && (
-              <button className="text-xs" style={{ color: 'var(--muted)' }} onClick={() => load(active, true)}>
-                Regenerar este ejercicio
-              </button>
+                {active === 'MULTIPLE_CHOICE' && (
+                  <MultipleChoice content={state.content as MultipleChoiceContent} onFinish={(r) => finish(state.setId, r)} />
+                )}
+                {active === 'FILL_BLANKS' && (
+                  <FillBlanks content={state.content as FillBlanksContent} onFinish={(r) => finish(state.setId, r)} />
+                )}
+                {active === 'MATCHING' && (
+                  <Matching content={state.content as MatchingContent} onFinish={(r) => finish(state.setId, r)} />
+                )}
+                {active === 'ORDER_WORDS' && (
+                  <OrderWords content={state.content as OrderWordsContent} onFinish={(r) => finish(state.setId, r)} />
+                )}
+                {active === 'FLASHCARDS' && (
+                  <Flashcards content={state.content as FlashcardsContent} onFinish={(r) => finish(state.setId, r)} />
+                )}
+
+                {finishError && (
+                  <div className="space-y-2">
+                    <p style={{ color: 'var(--warning)' }}>
+                      No se pudo guardar el intento: {finishError}
+                    </p>
+                    <Button
+                      onClick={() =>
+                        lastSubmit.current && finish(lastSubmit.current.setId, lastSubmit.current.r)
+                      }
+                    >
+                      Reintentar guardado
+                    </Button>
+                  </div>
+                )}
+
+                {!result && (
+                  <button className="text-xs" style={{ color: 'var(--muted)' }} onClick={() => load(active as ExerciseType, true)}>
+                    Regenerar este ejercicio
+                  </button>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </Card>
     </div>

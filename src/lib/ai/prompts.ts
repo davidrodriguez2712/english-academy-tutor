@@ -99,3 +99,21 @@ export function vocabPrompt(word: string): { system: string; user: string } {
     user: `Palabra o expresión: "${word}"`,
   }
 }
+
+export function unitVocabPrompt(unitText: string): { system: string; user: string } {
+  return {
+    system:
+      'Eres un profesor de inglés que, a partir del texto de una unidad de un libro, ' +
+      'selecciona el vocabulario clave que un estudiante hispanohablante debería estudiar. ' +
+      'Responde SOLO con JSON válido con esta forma exacta: ' +
+      '{ "items": [{ "word": string, "translation": string, "meaning": string, "partOfSpeech": string, "ipa": string, "examples": string[] }] }. ' +
+      'word: la palabra o expresión en inglés tal como aparece en el texto. ' +
+      'translation: su traducción al español. ' +
+      'meaning: la definición en inglés. ' +
+      'partOfSpeech: la categoría gramatical en inglés (noun, verb, adjective, adverb, phrase, phrasal verb, idiom...). ' +
+      'ipa: la transcripción fonética entre barras. ' +
+      'examples: al menos 3 frases de ejemplo en inglés. ' +
+      'Incluye entre 12 y 20 términos, prioriza los más útiles y los que aparecen en el texto de la unidad.',
+    user: `Texto de la unidad:\n"""\n${unitText.slice(0, 8000)}\n"""`,
+  }
+}
