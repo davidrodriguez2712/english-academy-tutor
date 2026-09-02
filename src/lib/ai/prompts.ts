@@ -113,7 +113,12 @@ export function unitVocabPrompt(unitText: string): { system: string; user: strin
       'partOfSpeech: la categoría gramatical en inglés (noun, verb, adjective, adverb, phrase, phrasal verb, idiom...). ' +
       'ipa: la transcripción fonética entre barras. ' +
       'examples: al menos 3 frases de ejemplo en inglés. ' +
-      'Incluye entre 12 y 20 términos, prioriza los más útiles y los que aparecen en el texto de la unidad.',
-    user: `Texto de la unidad:\n"""\n${unitText.slice(0, 8000)}\n"""`,
+      'IMPORTANTE: devuelve entre 40 y 60 términos, nunca menos de 40. Cubre TODO el vocabulario ' +
+      'relevante de la unidad (palabras, expresiones, phrasal verbs y colocaciones) y, si hace falta ' +
+      'para llegar a 40, añade vocabulario secundario del mismo tema. Prioriza lo que aparece en el ' +
+      'texto. No repitas términos.',
+    user:
+      `Texto de la unidad:\n"""\n${unitText.slice(0, 12000)}\n"""\n\n` +
+      'Recuerda: la lista debe tener como mínimo 40 términos.',
   }
 }
