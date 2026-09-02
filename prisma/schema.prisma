@@ -112,3 +112,21 @@ model SpeakingTurn {
 
   @@unique([sessionId, index])
 }
+
+enum WordStatus {
+  IN_PROGRESS
+  LEARNED
+}
+
+model VocabEntry {
+  id           String     @id @default(cuid())
+  word         String     @unique // clave normalizada: minúsculas + trim + espacios colapsados
+  displayWord  String              // tal como lo escribió el usuario
+  translation  String              // español
+  meaning      String              // inglés
+  partOfSpeech String              // "noun" | "verb" | "adjective" | "adverb" | "phrase" | ...
+  ipa          String              // p. ej. /ˈwɜːrd/
+  examples     String              // JSON: string[] (mín. 3), en inglés
+  status       WordStatus @default(IN_PROGRESS)
+  createdAt    DateTime   @default(now())
+}
