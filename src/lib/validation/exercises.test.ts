@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { exerciseSchemaFor, parseExerciseContent } from './exercises'
+import { serializeContent, deserializeContent } from '@/lib/exercises/exercise-set'
 import * as fx from './fixtures/exercises'
 
 describe('exerciseSchemaFor', () => {
@@ -18,6 +19,48 @@ describe('exerciseSchemaFor', () => {
 
   it('rechaza JSON con forma equivocada', () => {
     expect(exerciseSchemaFor('FLASHCARDS').safeParse({ foo: 1 }).success).toBe(false)
+  })
+
+  it('acepta opción múltiple con referencia de página', () => {
+    const ok = {
+      items: [{ question: 'q', options: ['a', 'b'], correctIndex: 0, explanation: 'e', page: 12 }],
+    }
+    expect(exerciseSchemaFor('MULTIPLE_CHOICE').safeParse(ok).success).toBe(true)
+  })
+  it('rechaza page no positiva en opción múltiple', () => {
+    const bad = {
+      items: [{ question: 'q', options: ['a', 'b'], correctIndex: 0, explanation: 'e', page: 0 }],
+    }
+    expect(exerciseSchemaFor('MULTIPLE_CHOICE').safeParse(bad).success).toBe(false)
+  })
+  it('acepta rellenar huecos con y sin page', () => {
+    const ok = {
+      items: [
+        { sentence: 'He ___ home.', answer: 'went', acceptedVariants: [], page: 5 },
+        { sentence: 'She ___ it.', answer: 'did', acceptedVariants: [] },
+      ],
+    }
+    expect(exerciseSchemaFor('FILL_BLANKS').safeParse(ok).success).toBe(true)
+  })
+})
+
+describe('round-trip de serializeContent/deserializeContent con page', () => {
+  it('conserva page en opción múltiple', () => {
+    const content = {
+      items: [{ question: 'q', options: ['a', 'b'], correctIndex: 0, explanation: 'e', page: 7 }],
+    }
+    const back = deserializeContent(
+      'MULTIPLE_CHOICE',
+      serializeContent('MULTIPLE_CHOICE', content),
+    )
+    expect((back.items[0] as { page?: number }).page).toBe(7)
+  })
+  it('conserva page en rellenar huecos', () => {
+    const content = {
+      items: [{ sentence: 'He ___ home.', answer: 'went', acceptedVariants: [], page: 7 }],
+    }
+    const back = deserializeContent('FILL_BLANKS', serializeContent('FILL_BLANKS', content))
+    expect((back.items[0] as { page?: number }).page).toBe(7)
   })
 })
 

@@ -10,6 +10,7 @@ export const multipleChoiceSchema = z.object({
           options: z.array(z.string().min(1)).min(2).max(6),
           correctIndex: z.number().int().min(0),
           explanation: z.string().min(1),
+          page: z.number().int().positive().optional(),
         })
         .refine((q) => q.correctIndex < q.options.length, {
           message: 'correctIndex fuera de rango',
@@ -25,6 +26,7 @@ export const fillBlanksSchema = z.object({
         sentence: z.string().includes('___'),
         answer: z.string().min(1),
         acceptedVariants: z.array(z.string()).default([]),
+        page: z.number().int().positive().optional(),
       }),
     )
     .min(1),

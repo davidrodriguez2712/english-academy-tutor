@@ -20,3 +20,22 @@ export function sliceUnitText(pages: string[], startPage: number, endPage: numbe
   const to = Math.min(endPage, pages.length)
   return pages.slice(from, to).join('\n\n')
 }
+
+export type PageSlice = { page: number; text: string }
+
+export function sliceUnitPages(
+  pages: string[],
+  startPage: number,
+  endPage: number,
+): PageSlice[] {
+  if (startPage < 1 || startPage > endPage) {
+    throw new Error('rango de páginas inválido')
+  }
+  const to = Math.min(endPage, pages.length)
+  const out: PageSlice[] = []
+  for (let p = startPage; p <= to; p++) {
+    const text = pages[p - 1]?.trim()
+    if (text) out.push({ page: p, text })
+  }
+  return out
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFile } from 'node:fs/promises'
-import { extractPdf, sliceUnitText } from './pdf'
+import { extractPdf, sliceUnitText, sliceUnitPages } from './pdf'
 
 describe('extractPdf', () => {
   it('extrae texto por página del PDF de fixture', async () => {
@@ -25,5 +25,24 @@ describe('sliceUnitText', () => {
   })
   it('lanza si startPage > endPage', () => {
     expect(() => sliceUnitText(pages, 3, 2)).toThrow()
+  })
+})
+
+describe('sliceUnitPages', () => {
+  const pages = ['uno', 'dos', '', 'cuatro']
+  it('numera las páginas de forma absoluta y omite las vacías', () => {
+    expect(sliceUnitPages(pages, 2, 4)).toEqual([
+      { page: 2, text: 'dos' },
+      { page: 4, text: 'cuatro' },
+    ])
+  })
+  it('clampa endPage al total', () => {
+    expect(sliceUnitPages(pages, 4, 99)).toEqual([{ page: 4, text: 'cuatro' }])
+  })
+  it('lanza si startPage > endPage', () => {
+    expect(() => sliceUnitPages(pages, 3, 2)).toThrow()
+  })
+  it('lanza si startPage < 1', () => {
+    expect(() => sliceUnitPages(pages, 0, 2)).toThrow()
   })
 })

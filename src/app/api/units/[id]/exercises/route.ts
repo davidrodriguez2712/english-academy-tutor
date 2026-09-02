@@ -4,6 +4,7 @@ import { isAiEnabled } from '@/lib/ai/config'
 import { generateExercises, AiError } from '@/lib/ai'
 import { isExerciseType } from '@/lib/exercise-types'
 import { serializeContent, deserializeContent } from '@/lib/exercises/exercise-set'
+import { sliceUnitPages, type PageSlice } from '@/lib/pdf'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -41,7 +42,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   let serialized: string
   try {
-    const content = await generateExercises(unit.extractedText, type)
+    let pages: PageSlice[] | undefined
+    if (type === 'MULTIPLE_CHOICE' || type === 'FILL_BLANKS') {
+      try {
+        const book = await prisma.book.findUnique({
+          where: { id: unit.bookId },
+          select: { rawText: true },
+        })
+        if (book) {
+          pages = sliceUnitPages(
+            JSON.parse(book.rawText) as string[],
+            unit.startPage,
+            unit.endPage,
+          )
+        }
+      } catch {
+        pages = undefined // rawText corrupto → degrada a texto plano
+      }
+    }
+    const content = await generateExercises(unit.extractedText, type, { pages })
+    if (pages) {
+      const valid = new Set(pages.map((p) => p.page))
+      for (const item of content.items as { page?: number }[]) {
+        if (item.page !== undefined && !valid.has(item.page)) delete item.page
+      }
+    }
     serialized = serializeContent(type, content)
   } catch (err) {
     if (err instanceof AiError) {
