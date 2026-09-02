@@ -42,31 +42,41 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
     if (!word.trim() || adding) return
     setAdding(true)
     setMessage(null)
-    const res = await fetch('/api/vocab', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word }),
-    })
-    if (res.ok) {
-      setWord('')
-      await refresh(q, status)
-    } else {
-      setMessage(await errorFrom(res))
+    try {
+      const res = await fetch('/api/vocab', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word }),
+      })
+      if (res.ok) {
+        setWord('')
+        await refresh(q, status)
+      } else {
+        setMessage(await errorFrom(res))
+      }
+    } catch {
+      setMessage('Error de red, inténtalo de nuevo')
+    } finally {
+      setAdding(false)
     }
-    setAdding(false)
   }
 
   async function act(id: string, run: () => Promise<Response>) {
     setRowBusy(id)
     setMessage(null)
-    const res = await run()
-    if (res.ok) {
-      setConfirmDelete(null)
-      await refresh(q, status)
-    } else {
-      setMessage(await errorFrom(res))
+    try {
+      const res = await run()
+      if (res.ok) {
+        setConfirmDelete(null)
+        await refresh(q, status)
+      } else {
+        setMessage(await errorFrom(res))
+      }
+    } catch {
+      setMessage('Error de red, inténtalo de nuevo')
+    } finally {
+      setRowBusy(null)
     }
-    setRowBusy(null)
   }
 
   return (
@@ -76,6 +86,7 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
           <input
             value={word}
             onChange={(e) => setWord(e.target.value)}
+            maxLength={100}
             placeholder="Palabra o expresión en inglés"
             className="flex-1 rounded-lg border px-3 py-2 text-sm"
             style={inputStyle}

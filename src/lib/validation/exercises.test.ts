@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { exerciseSchemaFor, parseExerciseContent } from './exercises'
+import { serializeContent, deserializeContent } from '@/lib/exercises/exercise-set'
 import * as fx from './fixtures/exercises'
 
 describe('exerciseSchemaFor', () => {
@@ -40,6 +41,26 @@ describe('exerciseSchemaFor', () => {
       ],
     }
     expect(exerciseSchemaFor('FILL_BLANKS').safeParse(ok).success).toBe(true)
+  })
+})
+
+describe('round-trip de serializeContent/deserializeContent con page', () => {
+  it('conserva page en opción múltiple', () => {
+    const content = {
+      items: [{ question: 'q', options: ['a', 'b'], correctIndex: 0, explanation: 'e', page: 7 }],
+    }
+    const back = deserializeContent(
+      'MULTIPLE_CHOICE',
+      serializeContent('MULTIPLE_CHOICE', content),
+    )
+    expect((back.items[0] as { page?: number }).page).toBe(7)
+  })
+  it('conserva page en rellenar huecos', () => {
+    const content = {
+      items: [{ sentence: 'He ___ home.', answer: 'went', acceptedVariants: [], page: 7 }],
+    }
+    const back = deserializeContent('FILL_BLANKS', serializeContent('FILL_BLANKS', content))
+    expect((back.items[0] as { page?: number }).page).toBe(7)
   })
 })
 

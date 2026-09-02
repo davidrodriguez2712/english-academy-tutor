@@ -31,6 +31,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Escribe una palabra o expresión' }, { status: 400 })
   }
 
+  if (word.length > 100) {
+    return NextResponse.json(
+      { error: 'La palabra o expresión es demasiado larga' },
+      { status: 400 },
+    )
+  }
+
   const existing = await prisma.vocabEntry.findUnique({ where: { word } })
   if (existing) {
     return NextResponse.json({ error: 'Esa palabra ya está en tu lista' }, { status: 409 })

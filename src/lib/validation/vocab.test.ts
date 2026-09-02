@@ -24,6 +24,9 @@ describe('vocabEnrichmentSchema', () => {
   it('rechaza strings vacías', () => {
     expect(vocabEnrichmentSchema.safeParse({ ...valid, translation: '' }).success).toBe(false)
   })
+  it('rechaza campos solo con espacios en blanco', () => {
+    expect(vocabEnrichmentSchema.safeParse({ ...valid, translation: '   ' }).success).toBe(false)
+  })
 })
 
 describe('parseVocabEnrichment', () => {
@@ -32,5 +35,9 @@ describe('parseVocabEnrichment', () => {
   })
   it('lanza con contenido inválido', () => {
     expect(() => parseVocabEnrichment({ foo: 1 })).toThrow()
+  })
+  it('recorta los espacios sobrantes de un payload válido', () => {
+    const parsed = parseVocabEnrichment({ ...valid, translation: '  despegar  ' })
+    expect(parsed.translation).toBe('despegar')
   })
 })
