@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { saveBookFile } from '@/lib/storage'
+import { deleteBookFile, saveBookFile } from '@/lib/storage'
 import { extractPdf } from '@/lib/pdf'
 
 // Límite configurable por si necesitas subir un PDF grande (por defecto 100 MB).
@@ -45,13 +45,19 @@ export async function POST(req: NextRequest) {
   }
 
   const { filename } = await saveBookFile(bytes, file.name)
-  const book = await prisma.book.create({
-    data: {
-      title: file.name.replace(/\.pdf$/i, ''),
-      filename,
-      pageCount: extracted.totalPages,
-      rawText: JSON.stringify(extracted.pages),
-    },
-  })
-  return NextResponse.json({ id: book.id })
+  try {
+    const book = await prisma.book.create({
+      data: {
+        title: file.name.replace(/\.pdf$/i, ''),
+        filename,
+        pageCount: extracted.totalPages,
+        rawText: JSON.stringify(extracted.pages),
+      },
+    })
+    return NextResponse.json({ id: book.id })
+  } catch (err) {
+    // El PDF ya se escribió en disco; si el registro en BD falla, no lo dejamos huérfano.
+    await deleteBookFile(filename).catch(() => {})
+    throw err
+  }
 }

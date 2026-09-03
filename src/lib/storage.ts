@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
@@ -22,6 +22,27 @@ export async function saveBookFile(bytes: Buffer, originalName: string) {
   const path = join(BOOKS_DIR, filename)
   await writeFile(path, bytes)
   return { path, filename }
+}
+
+export async function listBookFiles(): Promise<string[]> {
+  await ensure(BOOKS_DIR)
+  return readdir(BOOKS_DIR)
+}
+
+function resolveBookPath(filename: string): string {
+  const abs = resolve(BOOKS_DIR, filename)
+  if (abs !== BOOKS_DIR && !abs.startsWith(BOOKS_DIR + sep)) {
+    throw new Error('ruta de libro inválida')
+  }
+  return abs
+}
+
+export async function readBookFile(filename: string): Promise<Buffer> {
+  return readFile(resolveBookPath(filename))
+}
+
+export async function deleteBookFile(filename: string): Promise<void> {
+  await rm(resolveBookPath(filename), { force: true })
 }
 
 export async function saveAudioFile(bytes: Buffer, ext: 'webm' | 'mp3'): Promise<string> {
