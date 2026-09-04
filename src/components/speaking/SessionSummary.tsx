@@ -19,15 +19,26 @@ export function SessionSummary({
 
       {done.map((t) => (
         <Card key={t.id}>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="font-medium">{session.mode === 'GUIDED' ? `Turno ${t.index}` : 'Monólogo'}: {t.assistantPrompt}</div>
-            <div><span style={{ color: 'var(--muted)' }}>Lo que dijiste: </span>{t.userTranscript}</div>
-            <div><span style={{ color: 'var(--muted)' }}>Corrección: </span>{t.correctedText}</div>
-            <div><span style={{ color: 'var(--muted)' }}>Versión natural: </span>{t.naturalVersion}</div>
-            <div><span style={{ color: 'var(--muted)' }}>Tip: </span>{t.fluencyTip}</div>
-            <div className="flex flex-wrap gap-4 pt-1">
-              {t.userAudioPath && <audio controls src={`/api/audio/${t.userAudioPath}`} />}
-              {t.correctionAudioPath && <audio controls src={`/api/audio/${t.correctionAudioPath}`} />}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <div className="font-medium">Lo que dijiste</div>
+                <p>{t.userTranscript}</p>
+                {t.userAudioPath && <audio controls src={`/api/audio/${t.userAudioPath}`} />}
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <div className="font-medium">Corrección sugerida</div>
+                  <p>{t.correctedText}</p>
+                </div>
+                <div>
+                  <div className="font-medium">Más natural</div>
+                  <p>{t.naturalVersion}</p>
+                  {t.naturalAudioPath && <audio controls src={`/api/audio/${t.naturalAudioPath}`} />}
+                </div>
+                <div><span style={{ color: 'var(--muted)' }}>Tip: </span>{t.fluencyTip}</div>
+              </div>
             </div>
           </div>
         </Card>

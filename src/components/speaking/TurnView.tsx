@@ -7,7 +7,6 @@ import { Spinner } from '@/components/ui/Spinner'
 import { errorFrom } from '@/lib/http'
 import { AudioRecorder } from './AudioRecorder'
 import { TurnFeedback } from './TurnFeedback'
-import { TurnTabs } from './TurnTabs'
 
 type OpenTurn = { index: number; assistantPrompt: string; assistantAudioPath: string | null }
 
@@ -65,6 +64,15 @@ export function TurnView({
               <Button onClick={() => pendingBlob && send(pendingBlob)}>Reintentar</Button>
             </div>
           )}
+          {phase === 'result' && result && (
+            <div className="space-y-3 border-t pt-3" style={{ borderColor: 'var(--border)' }}>
+              <div className="font-medium">Lo que dijiste</div>
+              <p>{result.turn.userTranscript}</p>
+              {result.turn.userAudioPath && (
+                <audio controls src={`/api/audio/${result.turn.userAudioPath}`}>Escuchar tu audio</audio>
+              )}
+            </div>
+          )}
           {phase === 'result' && (
             <Button
               onClick={() =>
@@ -80,16 +88,15 @@ export function TurnView({
       </Card>
 
       {phase === 'result' && result && (
-        <div className="space-y-4">
-          <Card><TurnFeedback fb={result.turn} /></Card>
-          <Card>
-            <TurnTabs
-              said={result.turn.userTranscript}
-              natural={result.turn.naturalVersion}
-              aiReply={mode === 'GUIDED' ? result.turn.nextAssistantPrompt : null}
-            />
-          </Card>
-        </div>
+        <Card>
+          <TurnFeedback fb={result.turn} />
+          {mode === 'GUIDED' && result.turn.nextAssistantPrompt && (
+            <div className="mt-3 border-t pt-3 text-sm" style={{ borderColor: 'var(--border)' }}>
+              <div className="font-medium">Siguiente pregunta</div>
+              <p style={{ color: 'var(--muted)' }}>{result.turn.nextAssistantPrompt}</p>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   )

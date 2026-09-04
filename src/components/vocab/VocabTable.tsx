@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
@@ -7,35 +7,43 @@ import { errorFrom } from '@/lib/http'
 import { SpeakButton } from './SpeakButton'
 import type { VocabEntryDTO } from '@/lib/vocab/entry'
 
-type StatusFilter = '' | 'IN_PROGRESS' | 'LEARNED'
 const inputStyle = { borderColor: 'var(--border)', background: 'var(--bg)' }
 
 export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
   const [entries, setEntries] = useState<VocabEntryDTO[]>(initial)
   const [word, setWord] = useState('')
+  const [category, setCategory] = useState('')
   const [adding, setAdding] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [q, setQ] = useState('')
-  const [status, setStatus] = useState<StatusFilter>('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [rowBusy, setRowBusy] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [knownCategories, setKnownCategories] = useState<string[]>(
+    Array.from(new Set(initial.map((e) => e.category).filter((c): c is string => !!c))).sort(),
+  )
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const refresh = useCallback(async (nextQ: string, nextStatus: StatusFilter) => {
+  const rememberCategory = useCallback((c: string | null | undefined) => {
+    if (!c) return
+    setKnownCategories((prev) => (prev.includes(c) ? prev : [...prev, c].sort()))
+  }, [])
+
+  const refresh = useCallback(async (nextQ: string, nextCategory: string) => {
     const params = new URLSearchParams()
     if (nextQ.trim()) params.set('q', nextQ.trim())
-    if (nextStatus) params.set('status', nextStatus)
+    if (nextCategory) params.set('category', nextCategory)
     const res = await fetch(`/api/vocab?${params.toString()}`)
     if (res.ok) setEntries((await res.json()).entries)
   }, [])
 
   useEffect(() => {
     if (debounce.current) clearTimeout(debounce.current)
-    debounce.current = setTimeout(() => refresh(q, status), 300)
+    debounce.current = setTimeout(() => refresh(q, categoryFilter), 300)
     return () => {
       if (debounce.current) clearTimeout(debounce.current)
     }
-  }, [q, status, refresh])
+  }, [q, categoryFilter, refresh])
 
   async function add(e: React.FormEvent) {
     e.preventDefault()
@@ -46,11 +54,13 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
       const res = await fetch('/api/vocab', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word }),
+        body: JSON.stringify({ word, category: category.trim() || undefined }),
       })
       if (res.ok) {
+        rememberCategory(category.trim() || null)
         setWord('')
-        await refresh(q, status)
+        setCategory('')
+        await refresh(q, categoryFilter)
       } else {
         setMessage(await errorFrom(res))
       }
@@ -68,7 +78,7 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
       const res = await run()
       if (res.ok) {
         setConfirmDelete(null)
-        await refresh(q, status)
+        await refresh(q, categoryFilter)
       } else {
         setMessage(await errorFrom(res))
       }
@@ -79,8 +89,27 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
     }
   }
 
+  async function updateCategory(id: string, nextCategory: string) {
+    rememberCategory(nextCategory.trim() || null)
+    await act(id, () =>
+      fetch(`/api/vocab/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: nextCategory.trim() }),
+      }),
+    )
+  }
+
+  const categoryListId = useMemo(() => 'vocab-categories', [])
+
   return (
     <div className="space-y-4">
+      <datalist id={categoryListId}>
+        {knownCategories.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+
       <Card>
         <form onSubmit={add} className="flex flex-wrap items-center gap-2">
           <input
@@ -89,6 +118,15 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
             maxLength={100}
             placeholder="Palabra o expresión en inglés"
             className="flex-1 rounded-lg border px-3 py-2 text-sm"
+            style={inputStyle}
+          />
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            list={categoryListId}
+            maxLength={50}
+            placeholder="Categoría (opcional): Unidad 1…"
+            className="w-48 rounded-lg border px-3 py-2 text-sm"
             style={inputStyle}
           />
           <Button type="submit" disabled={adding || !word.trim()}>
@@ -112,14 +150,17 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
           style={inputStyle}
         />
         <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
           style={inputStyle}
         >
-          <option value="">Todas</option>
-          <option value="IN_PROGRESS">En progreso</option>
-          <option value="LEARNED">Aprendidas</option>
+          <option value="">Todas las categorías</option>
+          {knownCategories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -134,7 +175,7 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
               <th className="p-2 text-left">IPA</th>
               <th className="p-2 text-left">🔊</th>
               <th className="p-2 text-left">Ejemplos</th>
-              <th className="p-2 text-left">Estado</th>
+              <th className="p-2 text-left">Categoría</th>
               <th className="p-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -163,28 +204,19 @@ export function VocabTable({ initial }: { initial: VocabEntryDTO[] }) {
                   </ul>
                 </td>
                 <td className="p-2">
-                  <button
-                    type="button"
+                  <input
+                    key={`${entry.id}-${entry.category ?? ''}`}
+                    defaultValue={entry.category ?? ''}
+                    list={categoryListId}
                     disabled={rowBusy === entry.id}
-                    onClick={() =>
-                      act(entry.id, () =>
-                        fetch(`/api/vocab/${entry.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            status: entry.status === 'LEARNED' ? 'IN_PROGRESS' : 'LEARNED',
-                          }),
-                        }),
-                      )
-                    }
-                    className="rounded-full px-2 py-1 text-xs"
-                    style={{
-                      background: entry.status === 'LEARNED' ? 'var(--success)' : 'var(--bg)',
-                      border: '1px solid var(--border)',
+                    placeholder="Sin categoría"
+                    className="w-32 rounded-lg border px-2 py-1 text-xs"
+                    style={inputStyle}
+                    onBlur={(e) => {
+                      const next = e.target.value
+                      if (next.trim() !== (entry.category ?? '')) updateCategory(entry.id, next)
                     }}
-                  >
-                    {entry.status === 'LEARNED' ? 'Aprendida' : 'En progreso'}
-                  </button>
+                  />
                 </td>
                 <td className="p-2">
                   <div className="flex gap-2">

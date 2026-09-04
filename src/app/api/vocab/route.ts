@@ -7,14 +7,14 @@ import { normalizeWord, serializeExamples, toVocabDTO } from '@/lib/vocab/entry'
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const q = url.searchParams.get('q')?.trim().toLowerCase() ?? ''
-  const status = url.searchParams.get('status') ?? ''
+  const category = url.searchParams.get('category')?.trim() ?? ''
 
   const where: {
-    status?: 'IN_PROGRESS' | 'LEARNED'
+    category?: string
     OR?: { word?: { contains: string }; translation?: { contains: string } }[]
   } = {}
   if (q) where.OR = [{ word: { contains: q } }, { translation: { contains: q } }]
-  if (status === 'IN_PROGRESS' || status === 'LEARNED') where.status = status
+  if (category) where.category = category
 
   const entries = await prisma.vocabEntry.findMany({ where, orderBy: { createdAt: 'desc' } })
   return NextResponse.json({ entries: entries.map(toVocabDTO) })
@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   const rawWord = typeof body?.word === 'string' ? body.word : ''
+  const rawCategory = typeof body?.category === 'string' ? body.category.trim() : ''
 
   let word: string
   try {
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
       partOfSpeech: enrichment.partOfSpeech,
       ipa: enrichment.ipa,
       examples: serializeExamples(enrichment.examples),
+      category: rawCategory || null,
     },
   })
   return NextResponse.json({ entry: toVocabDTO(entry) }, { status: 201 })

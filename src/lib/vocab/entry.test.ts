@@ -44,6 +44,7 @@ describe('toVocabDTO', () => {
       ipa: '/teɪk ɒf/',
       examples: JSON.stringify(['The plane took off.', 'We took off early.', 'It took off fast.']),
       status: 'IN_PROGRESS',
+      category: null,
       createdAt: new Date('2026-09-02T00:00:00Z'),
     })
     expect(dto.examples).toHaveLength(3)

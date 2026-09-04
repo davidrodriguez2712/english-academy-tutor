@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let userAudioPath: string
   let transcript: string
   let review
-  let correctionAudioPath: string
+  let naturalAudioPath: string
   let nextAudioPath: string | null = null
   try {
     userAudioPath = await saveAudioFile(bytes, 'webm')
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       totalTurns: session.totalTurns,
       history: buildHistory(session.turns),
     })
-    correctionAudioPath = await saveAudioFile(await synthesizeSpeech(review.correctedText), 'mp3')
+    naturalAudioPath = await saveAudioFile(await synthesizeSpeech(review.naturalVersion), 'mp3')
     if (review.nextAssistantPrompt) {
       nextAudioPath = await saveAudioFile(await synthesizeSpeech(review.nextAssistantPrompt), 'mp3')
     }
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         correctedText: review.correctedText,
         naturalVersion: review.naturalVersion,
         fluencyTip: review.fluencyTip,
-        correctionAudioPath,
+        naturalAudioPath,
       },
     })
     if (review.nextAssistantPrompt) {

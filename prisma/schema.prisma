@@ -108,7 +108,7 @@ model SpeakingTurn {
   correctedText       String?
   naturalVersion      String?
   fluencyTip          String?
-  correctionAudioPath String?
+  naturalAudioPath    String?
   createdAt           DateTime        @default(now())
 
   @@unique([sessionId, index])
@@ -129,6 +129,7 @@ model VocabEntry {
   ipa          String              // p. ej. /ˈwɜːrd/
   examples     String              // JSON: string[] (mín. 3), en inglés
   status       WordStatus @default(IN_PROGRESS)
+  category     String?             // etiqueta libre elegida por el usuario, p. ej. "Unidad 1"
   createdAt    DateTime   @default(now())
 }
 
